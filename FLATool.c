@@ -258,7 +258,7 @@ void extract(char *flatName, bool force)
 
     // progress output
     if(g_verbose)
-      printf("%s (size 0x"PRIxSZT", offset 0x"PRIxSZT")\n",
+      printf("%s (size 0x%x, offset 0x"PRIxSZT")\n",
           name, ddsSize, offset);
     else
       fprintf(stderr, "\rExtracting...%d%%", (int)((float)i/header.numDDS*100));

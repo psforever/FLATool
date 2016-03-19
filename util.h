@@ -22,7 +22,7 @@ char * basename(const char * path, bool extension);
 #define PRIxSZT "%x"
 #endif // PLATFORM_BITS_64
 
-#elif PLATFORM_LINUX
+#elif defined(PLATFORM_LINUX)
 
 #define PRIuSZT "%zu"
 #define PRIxSZT "%zx"

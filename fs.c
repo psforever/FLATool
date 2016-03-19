@@ -30,7 +30,7 @@ bool create_dir(const char * dir)
     return true;
 }
 
-#elif PLATFORM_LINUX
+#elif defined(PLATFORM_LINUX)
 
 #include <sys/types.h>
 #include <sys/stat.h>
