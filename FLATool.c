@@ -3,8 +3,8 @@
 #include <memory.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <getopt.h>
 
-#include "getopt.h"
 #include "fs.h"
 #include "util.h"
 #include "flat.h"
