@@ -139,7 +139,7 @@ void create(char *flatName, bool force, char * files[], size_t numFiles)
     if(!file_exists(files[i]))
       fatal("file '%s' doesn't exist", files[i]);
 
-  printf("Creating new "FILE_TYPE" %s from %u files\n", flatName, numFiles);
+  printf("Creating new "FILE_TYPE" %s from %zu files\n", flatName, numFiles);
 
   FILE * pFile = fopen(flatName, "wb");
 
@@ -171,7 +171,7 @@ void create(char *flatName, bool force, char * files[], size_t numFiles)
 
     // progress output
     if(g_verbose)
-      printf("%s (size 0x%0x, offset 0x%0x)\n",
+      printf("%s (size 0x%0zx, offset 0x%0zx)\n",
           base, ddsSize, offset);
     else
       fprintf(stderr, "\rExtracting...%d%%", (int)((float)i/numFiles*100));
@@ -200,6 +200,9 @@ void create(char *flatName, bool force, char * files[], size_t numFiles)
     free(base);
     fclose(inFile);
   }
+
+  if(!g_verbose)
+    printf("\n");
 
   free(buffer);
   fclose(pFile);
@@ -255,7 +258,7 @@ void extract(char *flatName, bool force)
 
     // progress output
     if(g_verbose)
-      printf("%s (size 0x%0x, offset 0x%0x)\n",
+      printf("%s (size 0x%0x, offset 0x%0zx)\n",
           name, ddsSize, offset);
     else
       fprintf(stderr, "\rExtracting...%d%%", (int)((float)i/header.numDDS*100));
@@ -281,6 +284,9 @@ void extract(char *flatName, bool force)
     free(name);
     free(path);
   }
+
+  if(!g_verbose)
+    printf("\n");
 
   free(buffer);
   free(base);

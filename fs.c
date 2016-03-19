@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
+#include <string.h>
+
+#include "util.h"
 
 #if defined(_WIN32) || defined(__CYGWIN32__)
 
@@ -43,6 +46,7 @@ bool dir_exists(const char * path)
       return false;
     } else {
       fatal("stat failure");
+      return false;
     }
   } else {
     // it's a dir
