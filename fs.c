@@ -7,7 +7,7 @@
 
 #include "util.h"
 
-#if defined(_WIN32) || defined(__CYGWIN32__)
+#ifdef PLATFORM_WINDOWS
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -30,7 +30,7 @@ bool create_dir(const char * dir)
     return true;
 }
 
-#elif __linux__
+#elif PLATFORM_LINUX
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -62,9 +62,6 @@ bool create_dir(const char * dir)
 {
   return mkdir(dir, 0777) == 0;
 }
-
-#else
-#error "unsupported platform"
 
 #endif
 

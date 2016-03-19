@@ -4,16 +4,12 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#if defined(_WIN32) || defined(__CYGWIN32__)
+#include "compat.h"
 
-#define PATH_SEP "\\"
-
-#elif __linux__
-
-#define PATH_SEP "/"
-
-#else
-#error "unsupported platform"
+#ifdef PLATFORM_WINDOWS
+#  define PATH_SEP "\\"
+#elif PLATFORM_LINUX
+#  define PATH_SEP "/"
 #endif
 
 bool file_exists(const char * path);

@@ -2,9 +2,31 @@
 #define UTIL_H
 
 #include <stdbool.h>
+#include <inttypes.h>
+
+#include "compat.h"
 
 void fatal(char * msg, ...);
 char * basename(const char * path, bool extension);
 
 #define min(x, y) (((x) < (y)) ? (x) : (y))
-#endif
+
+
+#ifdef PLATFORM_WINDOWS
+
+#ifdef PLATFORM_BITS_64
+#define PRIuSZT "%lu"
+#define PRIxSZT "%lx"
+#else
+#define PRIuSZT "%u"
+#define PRIxSZT "%x"
+#endif // PLATFORM_BITS_64
+
+#elif PLATFORM_LINUX
+
+#define PRIuSZT "%zu"
+#define PRIxSZT "%zx"
+
+#endif // PLATFORM_BITS_64
+
+#endif // PLATFORM_WINDOWS
