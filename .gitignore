@@ -1,0 +1,5 @@
+*.fat
+*.o
+*.exe
+FLATool
+
