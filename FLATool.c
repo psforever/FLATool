@@ -8,8 +8,10 @@
 #include "fs.h"
 #include "util.h"
 #include "flat.h"
+#include "fdx.h"
+#include "varsz.h"
 
-#define VERSION_NAME "0.1"
+#define VERSION_NAME "0.2"
 #define PROG_NAME "FLATool"
 #define FILE_TYPE "FlatFile"
 
@@ -19,7 +21,7 @@ int g_verbose = 0;
 #define BUFFER_SIZE 1024*16
 
 // prototypes
-void create(char *flatName, bool force, char * files[], size_t numFiles);
+void create(char *flatName, bool force, char * fdxFile, char * ddsDir);
 void extract(char *flatName, bool force);
 
 typedef enum _mode {
@@ -34,12 +36,11 @@ void usage(char * reason)
   if(strlen(reason))
     printf("Error: %s\n", reason);
 
-  printf("usage: %s [options] [-x file.fat] [-c newfile.fat [dds_dir] [file1.dds file2.dds ...]]\n", exename);
+  printf("usage: %s [options] [-x file.fat] [-c newfile.fat oldfile.fdx dds_dir"PATH_SEP"]\n", exename);
   printf("\n");
   printf("Examples:\n");
   printf("  %s -x dds_ui.fat # extracts files to dds_ui directory\n", exename);
-  printf("  %s -c dds_new.fat dds_ui"PATH_SEP" # creates dds_new.fat from source directory\n", exename);
-  printf("  %s -fvc dds_new.fat dds_ui"PATH_SEP"*.dds # creates dds_new.fat from the globbed .DDS files\n", exename);
+  printf("  %s -c dds_new.fat dds_ui.fdx dds_ui"PATH_SEP" # creates dds_new.fat from source directory\n", exename);
   printf("\n");
   printf("Options:\n");
   printf("  -x  extract a "FILE_TYPE" to a directory of the same name\n");
@@ -108,13 +109,21 @@ int main(int argc, char * argv[])
   // create requires DDS files
   if(mode == MODE_CREATE) {
     if(optind >= argc) {
-      usage("input DDS files required");
+      usage(".FDX file required");
     }
 
-    char ** files = argv+optind;
+    char * fdxFile = argv[optind];
+    optind++;
+
+    if(optind >= argc) {
+      usage("input DDS directory required");
+    }
+
+    char * ddsDir = argv[optind];
+    optind++;
 
     // pass in the list of files
-    create(flatFilename, force, files, argc-optind);
+    create(flatFilename, force, fdxFile, ddsDir);
 
   } else if(mode == MODE_EXTRACT) {
     extract(flatFilename, force);
@@ -123,23 +132,94 @@ int main(int argc, char * argv[])
   return 0;
 }
 
-void create(char *flatName, bool force, char * files[], size_t numFiles)
+// comparison function for sorting a list of strings
+int sort_ascending(const void * l, const void * r)
 {
+  char * left = *(char **)l;
+  char * right = *(char **)r;
+
+  return strcmp(left, right);
+}
+
+void create(char *flatName, bool force, char * fdxFile, char * ddsDir)
+{
+  char * flatNameBase = get_extension(flatName);
+  *flatNameBase = '\0'; // remove extension
+
+  char * fdxName = string_cat(flatName, ".fdx");
+
+  if(strcmp(flatName, fdxName) == 0)
+    fatal("DDS and FDX names must be different");
+
   if(file_exists(flatName) && !force)
     fatal("not clobbering existing "FILE_TYPE" (use -f to force)");
 
+  if(file_exists(fdxName) && !force)
+    fatal("not clobbering existing FDX (%s) (use -f to force)", fdxName);
+
   size_t i = 0;
 
-  if(dir_exists(files[0])) {
-    numFiles = get_files_in_dir(files[0], &files);
+  if(!dir_exists(ddsDir)) {
+    fatal("specified DDS directory %s does not exist", ddsDir);
   }
 
-  // make sure the files passed in exist
-  for(i = 0; i < numFiles; i++)
-    if(!file_exists(files[i]))
-      fatal("file '%s' doesn't exist", files[i]);
+  if(!file_exists(fdxFile)) {
+    fatal("specified FDX file %s does not exist", fdxFile);
+  }
 
-  printf("Creating new "FILE_TYPE" %s from "PRIuSZT" files\n", flatName, numFiles);
+  // gather files from the passed in directory
+  char ** files = NULL;
+  size_t numFiles = get_files_in_dir_with_ext(ddsDir, &files, "dds");
+
+  if(numFiles == 0)
+    fatal("no files found in input directory");
+
+  // Due to strangeness in the ordering of files in a directory, we need to sort by
+  // name ascending. this is kinda a hack as if one file removed, then the FlatFile's FDX
+  // will fail. We should really be parsing the .FDX and .FAT together to avoid this
+  qsort(files, numFiles, sizeof(char *), sort_ascending);
+
+  // make sure the files passed in exist
+  for(i = 0; i < numFiles; i++) {
+    if(!file_exists(files[i]))
+      fatal("DDS file '%s' doesn't exist or isn't a file", files[i]);
+  }
+
+  // Parse the FDX file and make sure things match up with the DDS files
+  struct fdx_entries fdxEntries;
+
+  if(g_verbose)
+    printf("Parsing FDX...\n");
+
+  if(!fdx_parse(fdxFile, &fdxEntries)) {
+    fatal("failed to parse FDX file");
+  }
+
+  // check to make sure the FDX file matches the DDS files specified
+  if(fdxEntries.numEntries > numFiles) {
+    fatal("the FDX file has more entries than the number of .DDS files found in %s.\n"
+          "This probably means you accidentally deleted a .DDS file. You should reextract\n"
+          "(save your work) and try to repack again.", ddsDir);
+  } else if(fdxEntries.numEntries < numFiles) {
+    fatal("the FDX file has less entries than the number of .DDS files found in %s.\n"
+          "You most likely have extra .DDS files in your DDS directory.\n", ddsDir);
+  }
+
+  for(i = 0; i < fdxEntries.numEntries; i++) {
+    char * fdxE = fdxEntries.entries[i]->name;
+    char * baseDDSE = basename(files[i], false);
+
+    if(strcmp(fdxE, baseDDSE))
+      fatal("FDX and DDS file order mismatch. %s != %s (entry "PRIuSZT")\n",
+          fdxE, baseDDSE, i+1);
+
+    free(baseDDSE);
+  }
+
+  /////////////////////////////////////////
+
+  printf("Creating new "FILE_TYPE" %s and FDX %s from "PRIuSZT" files\n",
+      flatName, fdxName, numFiles);
 
   FILE * pFile = fopen(flatName, "wb");
 
@@ -160,7 +240,6 @@ void create(char *flatName, bool force, char * files[], size_t numFiles)
   char * buffer = malloc(BUFFER_SIZE);
 
   for(i = 0; i < numFiles; i++) {
-    size_t offset = ftell(pFile);
     size_t ddsSize = file_size(files[i]);
     char * base = basename(files[i], false); // get the basename but keep extension
 
@@ -169,19 +248,26 @@ void create(char *flatName, bool force, char * files[], size_t numFiles)
     if(!inFile)
       fatal("failed to open '%s' for reading", files[i]);
 
-    // progress output
-    if(g_verbose)
-      printf("%s (size 0x"PRIxSZT" offset 0x"PRIxSZT")\n",
-          base, ddsSize, offset);
-    else
-      fprintf(stderr, "\rExtracting...%d%%", (int)((float)i/numFiles*100));
-
     // write the variable string
     write_var_string(pFile, base);
 
     // write the file size
     if(fwrite(&ddsSize, sizeof(ddsSize), 1, pFile) != 1)
       fatal("failed to write the DDS size");
+
+    // the offset to the beginning of the DDS file
+    size_t offset = ftell(pFile);
+
+    // Update the corresponding offset in the FDX metadata
+    // Remember, this relies off of the DDS and FDX order being the same...
+    fdxEntries.entries[i]->dds_offset = offset;
+
+    // progress output
+    if(g_verbose)
+      printf("%s (size 0x"PRIxSZT" offset 0x"PRIxSZT")\n",
+          base, ddsSize, offset);
+    else
+      fprintf(stderr, "\rPacking...%d%%", (int)((float)i/numFiles*100));
 
     // write the actual file
     size_t j = 0;
@@ -203,6 +289,9 @@ void create(char *flatName, bool force, char * files[], size_t numFiles)
 
   if(!g_verbose)
     printf("\n");
+
+  if(!fdx_pack(fdxName, &fdxEntries))
+    fatal("failed to write out the .FDX file");
 
   free(buffer);
   fclose(pFile);
@@ -245,7 +334,6 @@ void extract(char *flatName, bool force)
   size_t i;
 
   for(i = 0; i < header.numDDS; i++) {
-    size_t offset = ftell(pFile);
     char * name = read_var_string(pFile);
     uint32_t ddsSize = 0;
 
@@ -255,6 +343,9 @@ void extract(char *flatName, bool force)
     // make sure there aren't any slashes before trusting the path
     if(!path_single_level(name))
       fatal("unexpected multi-level path");
+
+    // offset of the DDS file
+    size_t offset = ftell(pFile);
 
     // progress output
     if(g_verbose)

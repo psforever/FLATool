@@ -30,6 +30,18 @@ bool create_dir(const char * dir)
     return true;
 }
 
+bool file_exists(const char * path)
+{
+  int res = GetFileAttributes(path);
+
+  if(res < 0) {
+    if(GetLastError() == ERROR_FILE_NOT_FOUND)
+      return false;
+  }
+
+  return true;
+}
+
 #elif defined(PLATFORM_LINUX)
 
 #include <sys/types.h>
@@ -63,8 +75,6 @@ bool create_dir(const char * dir)
   return mkdir(dir, 0777) == 0;
 }
 
-#endif
-
 bool file_exists(const char * path)
 {
   FILE * fp = fopen(path, "r");
@@ -76,6 +86,8 @@ bool file_exists(const char * path)
     return false;
   }
 }
+
+#endif
 
 size_t file_size(const char * path)
 {
@@ -165,3 +177,53 @@ size_t get_files_in_dir(const char * name, char ** files[])
     return 0;
   }
 }
+
+size_t get_files_in_dir_with_ext(const char * name, char ** files[], const char * ext)
+{
+  char ** localFiles = NULL;
+  size_t amt = get_files_in_dir(name, &localFiles);
+
+  if(amt == 0)
+    return amt;
+
+  // create a new list of files matching what we want
+  char ** newFiles = calloc(amt, sizeof(char*));
+
+  size_t i = 0, j = 0;
+
+  for(i = 0; i < amt; i++) {
+
+    if(strlen(localFiles[i]) <= strlen(ext)) {
+      free(localFiles[i]);
+      continue;
+    }
+
+    // find last .
+    char * newPtr = strstr(localFiles[i], ".");
+    char * ptr = NULL;
+
+    // find the last .
+    while(newPtr) {
+      ptr = newPtr;
+      newPtr = strstr(newPtr+1, ".");
+    }
+
+    if(!ptr) {
+      free(localFiles[i]);
+      continue;
+    }
+
+    // +1 to skip dot
+    if(strcmp(ptr+1, ext) == 0) {
+      newFiles[j++] = localFiles[i];
+    } else {
+      free(localFiles[i]);
+    }
+  }
+
+  free(localFiles);
+
+  *files = newFiles;
+  return j;
+}
+

@@ -8,6 +8,8 @@
 
 void fatal(char * msg, ...);
 char * basename(const char * path, bool extension);
+char * string_cat(const char * l, const char * r);
+char * get_extension(char * path);
 
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 

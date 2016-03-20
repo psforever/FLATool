@@ -1,7 +1,7 @@
 CC=$(PREFIX)gcc
 STRIP=$(PREFIX)strip
 
-SRC=FLATool.c flat.c util.c fs.c
+SRC=FLATool.c flat.c fdx.c varsz.c util.c fs.c
 OBJ=$(SRC:%.c=%.o)
 
 EXE=FLATool

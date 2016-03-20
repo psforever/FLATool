@@ -1,0 +1,100 @@
+#include "fdx.h"
+
+#include <stdio.h>
+#include <assert.h>
+
+#include "varsz.h"
+
+bool fdx_parse(const char * filename, struct fdx_entries * entries)
+{
+  assert(entries);
+
+  FILE * fp = fopen(filename, "rb");
+
+  if(!fp)
+    return false;
+
+  uint32_t nEntries = 0;
+  struct fdx_entry ** readEntries = NULL;
+
+  if(fread(&nEntries, sizeof(nEntries), 1, fp) != 1)
+    goto fail;
+
+  readEntries = calloc(nEntries, sizeof(struct fdx_entry *));
+
+  if(!readEntries)
+    goto fail;
+
+  size_t i;
+  for(i = 0; i < nEntries; i++) {
+    struct fdx_entry * entry = calloc(1, sizeof(struct fdx_entry));
+
+    entry->name = read_var_string(fp);
+    fread(&entry->dds_offset, sizeof(entry->dds_offset), 1, fp);
+    fread(&entry->texture_type, sizeof(entry->texture_type), 1, fp);
+
+    readEntries[i] = entry;
+  }
+
+  entries->numEntries = nEntries;
+  entries->entries = readEntries;
+
+  fclose(fp);
+
+  return true;
+
+fail:
+  if(readEntries)
+    free(readEntries);
+
+  fclose(fp);
+
+  return false;
+}
+
+bool fdx_pack(const char * filename, struct fdx_entries * entries)
+{
+  assert(entries);
+
+  FILE * fp = fopen(filename, "wb");
+
+  if(!fp)
+    return false;
+
+  fwrite(&entries->numEntries, sizeof(entries->numEntries), 1, fp);
+
+  size_t i;
+  for(i = 0; i < entries->numEntries; i++) {
+    struct fdx_entry * e = entries->entries[i];
+
+    write_var_string(fp, e->name);
+    fwrite(&e->dds_offset, sizeof(e->dds_offset), 1, fp);
+    fwrite(&e->texture_type, sizeof(e->texture_type), 1, fp);
+  }
+
+  fclose(fp);
+
+  return true;
+}
+
+void fdx_free(struct fdx_entries * entries)
+{
+  if(!entries)
+    return;
+
+  size_t i = 0;
+
+  for(i = 0; i < entries->numEntries; i++) {
+    struct fdx_entry * e = entries->entries[i];
+
+    if(e->name)
+      free(e->name);
+
+    free(e);
+  }
+
+  free(entries->entries);
+
+  entries->numEntries = 0;
+  entries->entries = NULL;
+}

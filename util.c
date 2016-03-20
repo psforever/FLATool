@@ -57,7 +57,7 @@ char * basename(const char * path, bool extension)
     if(ptr == NULL)
       return strdup(start);
 
-    if(ptr == path)
+    if(ptr == start)
       return strdup("");
 
     char * copy = strdup(start);
@@ -69,4 +69,36 @@ char * basename(const char * path, bool extension)
   } else {
     return strdup(start);
   }
+}
+
+char * string_cat(const char * l, const char * r)
+{
+  size_t lSz = strlen(l);
+  size_t rSz = strlen(r);
+
+  char * newString = malloc(lSz+rSz+1);
+
+  strncpy(newString, l, lSz+rSz);
+  strncpy(newString+lSz, r, rSz);
+
+  newString[lSz+rSz] = '\0';
+
+  return newString;
+}
+
+char * get_extension(char * path)
+{
+    char * newPtr = strstr(path, ".");
+    char * ptr = NULL;
+
+    // find the last .
+    while(newPtr) {
+      ptr = newPtr;
+      newPtr = strstr(newPtr+1, ".");
+    }
+
+    if(ptr == NULL)
+      return path+strlen(path);
+
+    return ptr;
 }

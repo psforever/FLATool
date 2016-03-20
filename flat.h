@@ -18,9 +18,4 @@ struct flat_header
 };
 #pragma pack(pop)
 
-#include <stdio.h>
-
-char * read_var_string(FILE * fp);
-void write_var_string(FILE * fp, const char * str);
-
 #endif
