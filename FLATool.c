@@ -143,10 +143,12 @@ int sort_ascending(const void * l, const void * r)
 
 void create(char *flatName, bool force, char * fdxFile, char * ddsDir)
 {
-  char * flatNameBase = get_extension(flatName);
+  char * tmpFlatName = strdup(flatName);
+  char * flatNameBase = get_extension(tmpFlatName);
   *flatNameBase = '\0'; // remove extension
 
-  char * fdxName = string_cat(flatName, ".fdx");
+  char * fdxName = string_cat(tmpFlatName, ".fdx");
+  free(tmpFlatName);
 
   if(strcmp(flatName, fdxName) == 0)
     fatal("DDS and FDX names must be different");
@@ -220,6 +222,9 @@ void create(char *flatName, bool force, char * fdxFile, char * ddsDir)
 
   printf("Creating new "FILE_TYPE" %s and FDX %s from "PRIuSZT" files\n",
       flatName, fdxName, numFiles);
+
+  // Fix a weird display bug on cygwin (I hate it so much)
+  fflush(stdout);
 
   FILE * pFile = fopen(flatName, "wb");
 
