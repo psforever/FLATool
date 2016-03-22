@@ -32,11 +32,12 @@ char * basename(const char * path, bool extension)
   while(riter >= path) {
     char c = *riter;
 
-#ifdef __CYGWIN32__
+  // windows can have either / or \ in the path name
+#ifdef PLATFORM_WINDOWS
     if(c == '\\' || c == '/')
       break;
-#else
-    if(c == PATH_SEP[0])
+#elif defined(PLATFORM_LINUX)
+    if(c == '/')
       break;
 #endif
 
@@ -44,31 +45,15 @@ char * basename(const char * path, bool extension)
     riter--;
   }
 
+  char * copy = strdup(start);
+
   if(extension) {
-    char * newPtr = strstr(start, ".");
-    char * ptr = NULL;
+    char * ptr = get_extension(copy);
 
-    // find the last .
-    while(newPtr) {
-      ptr = newPtr;
-      newPtr = strstr(newPtr+1, ".");
-    }
-
-    if(ptr == NULL)
-      return strdup(start);
-
-    if(ptr == start)
-      return strdup("");
-
-    char * copy = strdup(start);
-    size_t index = ptr-start;
-
-    copy[index] = '\0';
-
-    return copy;
-  } else {
-    return strdup(start);
+    *ptr = '\0';
   }
+
+  return copy;
 }
 
 char * string_cat(const char * l, const char * r)
@@ -88,15 +73,9 @@ char * string_cat(const char * l, const char * r)
 
 char * get_extension(char * path)
 {
-    char * newPtr = strstr(path, ".");
-    char * ptr = NULL;
+    char * ptr = strrchr(path, '.');
 
-    // find the last .
-    while(newPtr) {
-      ptr = newPtr;
-      newPtr = strstr(newPtr+1, ".");
-    }
-
+    // if not found, return pointer to end of string (no extension)
     if(ptr == NULL)
       return path+strlen(path);
 

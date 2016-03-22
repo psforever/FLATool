@@ -122,6 +122,7 @@ char * path_cat(const char * path1, const char * path2)
 }
 
 // XXX: blacklist == BAD
+// This is quite broken and insecure
 bool path_single_level(const char * path)
 {
   if(strstr(path, ".."PATH_SEP) != NULL)
