@@ -141,6 +141,14 @@ int sort_ascending(const void * l, const void * r)
   return strcmp(left, right);
 }
 
+int sort_fdx_ascending(const void * l, const void * r)
+{
+  struct fdx_entry * left = *(struct fdx_entry **)l;
+  struct fdx_entry * right = *(struct fdx_entry **)r;
+
+  return strcmp(left->name, right->name);
+}
+
 void create(char *flatName, bool force, char * fdxFile, char * ddsDir)
 {
   char * tmpFlatName = strdup(flatName);
@@ -176,12 +184,10 @@ void create(char *flatName, bool force, char * fdxFile, char * ddsDir)
   if(numFiles == 0)
     fatal("no files found in input directory");
 
-  // Due to strangeness in the ordering of files in a directory, we need to sort by
-  // name ascending. this is kinda a hack as if one file removed, then the FlatFile's FDX
-  // will fail. We should really be parsing the .FDX and .FAT together to avoid this
+  // sort the directory files
   qsort(files, numFiles, sizeof(char *), sort_ascending);
 
-  // make sure the files passed in exist
+  // make sure the files passed in exist and are actually files
   for(i = 0; i < numFiles; i++) {
     if(!file_exists(files[i]))
       fatal("DDS file '%s' doesn't exist or isn't a file", files[i]);
@@ -196,6 +202,11 @@ void create(char *flatName, bool force, char * fdxFile, char * ddsDir)
   if(!fdx_parse(fdxFile, &fdxEntries)) {
     fatal("failed to parse FDX file");
   }
+
+  // sort the FDX entries (planetside does some "sorting" where underscores
+  // have strange sort orders...)
+  qsort(fdxEntries.entries, fdxEntries.numEntries, sizeof(struct fdx_entry *),
+      sort_fdx_ascending);
 
   // check to make sure the FDX file matches the DDS files specified
   if(fdxEntries.numEntries > numFiles) {
@@ -293,7 +304,7 @@ void create(char *flatName, bool force, char * fdxFile, char * ddsDir)
   }
 
   if(!g_verbose)
-    printf("\n");
+    fprintf(stderr, "\n");
 
   if(!fdx_pack(fdxName, &fdxEntries))
     fatal("failed to write out the .FDX file");
@@ -334,6 +345,7 @@ void extract(char *flatName, bool force)
     fatal("failed to create output directory");
 
   printf("Extracting %s to directory %s"PATH_SEP"\n", flatName, base);
+  fflush(stdout);
 
   char * buffer = malloc(BUFFER_SIZE);
   size_t i;
@@ -382,7 +394,7 @@ void extract(char *flatName, bool force)
   }
 
   if(!g_verbose)
-    printf("\n");
+    fprintf(stderr, "\n");
 
   free(buffer);
   free(base);
