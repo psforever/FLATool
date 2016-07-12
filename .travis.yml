@@ -1,0 +1,48 @@
+# Enable new Trusty build server
+sudo: required
+dist: trusty
+
+language: c
+# NOTE: the Travis CI linter will complain about matrix.include.addons being undefined. Ignore it
+matrix:
+  include:
+    # Windows 32-bit
+    - compiler: gcc
+      env: PLATFORM="mingw32" ARCH="x86" BITSIZE=32 HOST="i686"
+      addons:
+        apt:
+          sources:
+            - sourceline: "ppa:tobydox/mingw-x-trusty"
+          packages:
+            - mingw32
+            - mingw32-x-binutils
+            - mingw32-x-gcc
+            - mingw32-x-runtime
+    # Windows 64-bit
+    - compiler: gcc
+      env: PLATFORM="mingw32" ARCH="x86_64" BITSIZE=64 HOST="x86_64"
+      addons:
+        apt:
+          sources:
+            - sourceline: "ppa:tobydox/mingw-x-trusty"
+          packages:
+            - mingw32
+            - mingw64-x-binutils
+            - mingw64-x-gcc
+            - mingw64-x-runtime
+    # Linux 64-bit
+    - compiler: gcc
+      env: PLATFORM="linux" ARCH="x86_64" BITSIZE=64 HOST="x86_64"
+install:
+  - |
+    if [ $PLATFORM == "mingw32" ]; then
+      export PREFIX="$HOST-w64-mingw32-";
+      export MINGW=/opt/mingw$BITSIZE
+      export PATH=$MINGW/bin:$PATH
+    fi
+  - export CC=${PREFIX}gcc
+  - export CXX=${PREFIX}g++
+
+script:
+  - $CC -dumpmachine
+  - make

@@ -1,4 +1,4 @@
-# FLATool
+# FLATool [![Build Status](https://travis-ci.org/psforever/FLATool.svg?branch=master)](https://travis-ci.org/psforever/FLATool)
 A simple C tool for extracting and creating FlatFile archives (.FAT) (pronounced flat-tool). This file format is used by PlanetSide 1 to store .DDS files (textures)
 
 Based on original FAT extractor by itburnz.
