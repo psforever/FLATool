@@ -341,7 +341,7 @@ void extract(char *flatName, bool force)
   if(dir_exists(base) && !force)
     fatal("not clobbering directory %s"PATH_SEP" (use -f to force)", base);
 
-  if(!create_dir(base))
+  if(!dir_exists(base) && !create_dir(base))
     fatal("failed to create output directory");
 
   printf("Extracting %s to directory %s"PATH_SEP"\n", flatName, base);
