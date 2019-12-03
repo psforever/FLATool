@@ -10,6 +10,7 @@ void fatal(char * msg, ...);
 char * basename(const char * path, bool extension);
 char * string_cat(const char * l, const char * r);
 char * get_extension(char * path);
+int planetside_strcmp(const char * l, const char * r);
 
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 

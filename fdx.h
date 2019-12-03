@@ -12,7 +12,7 @@ struct fdx_entry {
 };
 
 struct fdx_entries {
-  size_t numEntries;
+  uint32_t numEntries;
   struct fdx_entry ** entries;
 };
 

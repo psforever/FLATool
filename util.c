@@ -81,3 +81,26 @@ char * get_extension(char * path)
 
     return ptr;
 }
+
+// PlanetSide considers underscores to be appear lexigraphically after
+// letters. This string comparison respects that
+int planetside_strcmp(const char * l, const char * r)
+{
+  int c1, c2;
+  do {
+    c1 = *l++;
+    c2 = *r++;
+
+    if (c1 == '_')
+      c1 = 255;
+
+    if (c2 == '_')
+      c2 = 255;
+
+    if (c1 == '\0')
+      return c1 - c2;
+
+  } while (c1 == c2);
+
+  return c1 - c2;
+}

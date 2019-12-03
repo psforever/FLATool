@@ -138,7 +138,7 @@ int sort_ascending(const void * l, const void * r)
   char * left = *(char **)l;
   char * right = *(char **)r;
 
-  return strcmp(left, right);
+  return planetside_strcmp(left, right);
 }
 
 int sort_fdx_ascending(const void * l, const void * r)
@@ -146,7 +146,7 @@ int sort_fdx_ascending(const void * l, const void * r)
   struct fdx_entry * left = *(struct fdx_entry **)l;
   struct fdx_entry * right = *(struct fdx_entry **)r;
 
-  return strcmp(left->name, right->name);
+  return planetside_strcmp(left->name, right->name);
 }
 
 void create(char *flatName, bool force, char * fdxFile, char * ddsDir)
@@ -256,7 +256,7 @@ void create(char *flatName, bool force, char * fdxFile, char * ddsDir)
   char * buffer = malloc(BUFFER_SIZE);
 
   for(i = 0; i < numFiles; i++) {
-    size_t ddsSize = file_size(files[i]);
+    uint32_t ddsSize = file_size(files[i]);
     char * base = basename(files[i], false); // get the basename but keep extension
 
     FILE * inFile = fopen(files[i], "rb");
