@@ -11,7 +11,7 @@
 #include "fdx.h"
 #include "varsz.h"
 
-#define VERSION_NAME "0.2"
+#define VERSION_NAME "1.0"
 #define PROG_NAME "FLATool"
 #define FILE_TYPE "FlatFile"
 
