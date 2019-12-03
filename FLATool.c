@@ -274,13 +274,14 @@ void create(char *flatName, bool force, char * fdxFile, char * ddsDir)
     // the offset to the beginning of the DDS file
     size_t offset = ftell(pFile);
 
-    // Update the corresponding offset in the FDX metadata
+    // Update the corresponding offset+size in the FDX metadata
     // Remember, this relies off of the DDS and FDX order being the same...
     fdxEntries.entries[i]->dds_offset = offset;
+    fdxEntries.entries[i]->dds_size = ddsSize;
 
     // progress output
     if(g_verbose)
-      printf("%s (size 0x"PRIxSZT" offset 0x"PRIxSZT")\n",
+      printf("%s (size 0x%x, offset 0x"PRIxSZT")\n",
           base, ddsSize, offset);
     else
       fprintf(stderr, "\rPacking...%d%%", (int)((float)i/numFiles*100));

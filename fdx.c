@@ -4,6 +4,7 @@
 #include <assert.h>
 
 #include "varsz.h"
+#include "util.h"
 
 bool fdx_parse(const char * filename, struct fdx_entries * entries)
 {
@@ -30,8 +31,12 @@ bool fdx_parse(const char * filename, struct fdx_entries * entries)
     struct fdx_entry * entry = calloc(1, sizeof(struct fdx_entry));
 
     entry->name = read_var_string(fp);
-    fread(&entry->dds_offset, sizeof(entry->dds_offset), 1, fp);
-    fread(&entry->texture_type, sizeof(entry->texture_type), 1, fp);
+
+    if (fread(&entry->dds_offset, sizeof(entry->dds_offset), 1, fp) != 1)
+      fatal("unable to read the DDS offset in FDX entry "PRIuSZT"\n", i);
+
+    if (fread(&entry->dds_size, sizeof(entry->dds_size), 1, fp) != 1)
+      fatal("unable to read the DDS size in FDX entry "PRIuSZT"\n", i);
 
     readEntries[i] = entry;
   }
@@ -69,7 +74,7 @@ bool fdx_pack(const char * filename, struct fdx_entries * entries)
 
     write_var_string(fp, e->name);
     fwrite(&e->dds_offset, sizeof(e->dds_offset), 1, fp);
-    fwrite(&e->texture_type, sizeof(e->texture_type), 1, fp);
+    fwrite(&e->dds_size, sizeof(e->dds_size), 1, fp);
   }
 
   fclose(fp);

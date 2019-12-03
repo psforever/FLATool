@@ -8,7 +8,7 @@
 struct fdx_entry {
   char * name;
   uint32_t dds_offset;
-  uint32_t texture_type;
+  uint32_t dds_size;
 };
 
 struct fdx_entries {
