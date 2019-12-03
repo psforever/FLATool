@@ -41,6 +41,7 @@ void usage(char * reason)
   printf("Examples:\n");
   printf("  %s -x dds_ui.fat # extracts files to dds_ui directory\n", exename);
   printf("  %s -c dds_new.fat dds_ui"PATH_SEP" # creates dds_new.fat + dds_new.fdx from source directory\n", exename);
+  printf("  %s -fc dds_ui.fat dds_ui"PATH_SEP" # repacks dds_ui.fat + dds_ui.fdx in-place\n", exename);
   printf("\n");
   printf("Options:\n");
   printf("  -x  extract a "FILE_TYPE" to a directory of the same name\n");
