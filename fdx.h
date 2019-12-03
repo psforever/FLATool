@@ -17,6 +17,8 @@ struct fdx_entries {
 };
 
 bool fdx_parse(const char * filename, struct fdx_entries * entries);
+bool fdx_create(struct fdx_entries * entries);
+bool fdx_add(struct fdx_entries * entries, const char * name, uint32_t dds_offset, uint32_t dds_size);
 bool fdx_pack(const char * filename, struct fdx_entries * entries);
 void fdx_free(struct fdx_entries * entries);
 

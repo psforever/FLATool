@@ -21,7 +21,7 @@ int g_verbose = 0;
 #define BUFFER_SIZE 1024*16
 
 // prototypes
-void create(char *flatName, bool force, char * fdxFile, char * ddsDir);
+void create(char *flatName, bool force, char * ddsDir);
 void extract(char *flatName, bool force);
 
 typedef enum _mode {
@@ -36,11 +36,11 @@ void usage(char * reason)
   if(strlen(reason))
     printf("Error: %s\n", reason);
 
-  printf("usage: %s [options] [-x file.fat] [-c newfile.fat oldfile.fdx dds_dir"PATH_SEP"]\n", exename);
+  printf("usage: %s [options] [-x file.fat] [-c newfile.fat dds_dir"PATH_SEP"]\n", exename);
   printf("\n");
   printf("Examples:\n");
   printf("  %s -x dds_ui.fat # extracts files to dds_ui directory\n", exename);
-  printf("  %s -c dds_new.fat dds_ui.fdx dds_ui"PATH_SEP" # creates dds_new.fat from source directory\n", exename);
+  printf("  %s -c dds_new.fat dds_ui"PATH_SEP" # creates dds_new.fat + dds_new.fdx from source directory\n", exename);
   printf("\n");
   printf("Options:\n");
   printf("  -x  extract a "FILE_TYPE" to a directory of the same name\n");
@@ -109,13 +109,6 @@ int main(int argc, char * argv[])
   // create requires DDS files
   if(mode == MODE_CREATE) {
     if(optind >= argc) {
-      usage(".FDX file required");
-    }
-
-    char * fdxFile = argv[optind];
-    optind++;
-
-    if(optind >= argc) {
       usage("input DDS directory required");
     }
 
@@ -123,7 +116,7 @@ int main(int argc, char * argv[])
     optind++;
 
     // pass in the list of files
-    create(flatFilename, force, fdxFile, ddsDir);
+    create(flatFilename, force, ddsDir);
 
   } else if(mode == MODE_EXTRACT) {
     extract(flatFilename, force);
@@ -141,15 +134,7 @@ int sort_ascending(const void * l, const void * r)
   return planetside_strcmp(left, right);
 }
 
-int sort_fdx_ascending(const void * l, const void * r)
-{
-  struct fdx_entry * left = *(struct fdx_entry **)l;
-  struct fdx_entry * right = *(struct fdx_entry **)r;
-
-  return planetside_strcmp(left->name, right->name);
-}
-
-void create(char *flatName, bool force, char * fdxFile, char * ddsDir)
+void create(char *flatName, bool force, char * ddsDir)
 {
   char * tmpFlatName = strdup(flatName);
   char * flatNameBase = get_extension(tmpFlatName);
@@ -173,10 +158,6 @@ void create(char *flatName, bool force, char * fdxFile, char * ddsDir)
     fatal("specified DDS directory %s does not exist", ddsDir);
   }
 
-  if(!file_exists(fdxFile)) {
-    fatal("specified FDX file %s does not exist", fdxFile);
-  }
-
   // gather files from the passed in directory
   char ** files = NULL;
   size_t numFiles = get_files_in_dir_with_ext(ddsDir, &files, "dds");
@@ -193,46 +174,12 @@ void create(char *flatName, bool force, char * fdxFile, char * ddsDir)
       fatal("DDS file '%s' doesn't exist or isn't a file", files[i]);
   }
 
-  // Parse the FDX file and make sure things match up with the DDS files
   struct fdx_entries fdxEntries;
 
-  if(g_verbose)
-    printf("Parsing FDX...\n");
+  fdx_create(&fdxEntries);
 
-  if(!fdx_parse(fdxFile, &fdxEntries)) {
-    fatal("failed to parse FDX file");
-  }
-
-  // sort the FDX entries (planetside does some "sorting" where underscores
-  // have strange sort orders...)
-  qsort(fdxEntries.entries, fdxEntries.numEntries, sizeof(struct fdx_entry *),
-      sort_fdx_ascending);
-
-  // check to make sure the FDX file matches the DDS files specified
-  if(fdxEntries.numEntries > numFiles) {
-    fatal("the FDX file has more entries than the number of .DDS files found in %s.\n"
-          "This probably means you accidentally deleted a .DDS file. You should reextract\n"
-          "(save your work) and try to repack again.", ddsDir);
-  } else if(fdxEntries.numEntries < numFiles) {
-    fatal("the FDX file has less entries than the number of .DDS files found in %s.\n"
-          "You most likely have extra .DDS files in your DDS directory.\n", ddsDir);
-  }
-
-  for(i = 0; i < fdxEntries.numEntries; i++) {
-    char * fdxE = fdxEntries.entries[i]->name;
-    char * baseDDSE = basename(files[i], false);
-
-    if(strcmp(fdxE, baseDDSE))
-      fatal("FDX and DDS file order mismatch. %s != %s (entry "PRIuSZT")\n",
-          fdxE, baseDDSE, i+1);
-
-    free(baseDDSE);
-  }
-
-  /////////////////////////////////////////
-
-  printf("Creating new "FILE_TYPE" %s and FDX %s from "PRIuSZT" files\n",
-      flatName, fdxName, numFiles);
+  printf("Creating new "FILE_TYPE" %s from "PRIuSZT" files\n",
+      flatName, numFiles);
 
   // Fix a weird display bug on cygwin (I hate it so much)
   fflush(stdout);
@@ -274,10 +221,7 @@ void create(char *flatName, bool force, char * fdxFile, char * ddsDir)
     // the offset to the beginning of the DDS file
     size_t offset = ftell(pFile);
 
-    // Update the corresponding offset+size in the FDX metadata
-    // Remember, this relies off of the DDS and FDX order being the same...
-    fdxEntries.entries[i]->dds_offset = offset;
-    fdxEntries.entries[i]->dds_size = ddsSize;
+    fdx_add(&fdxEntries, base, offset, ddsSize);
 
     // progress output
     if(g_verbose)
@@ -309,6 +253,8 @@ void create(char *flatName, bool force, char * fdxFile, char * ddsDir)
 
   if(!fdx_pack(fdxName, &fdxEntries))
     fatal("failed to write out the .FDX file");
+
+  printf("Wrote new FDX %s from "PRIuSZT" files\n", fdxName, numFiles);
 
   free(buffer);
   fclose(pFile);

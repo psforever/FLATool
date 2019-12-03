@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 #include "varsz.h"
 #include "util.h"
@@ -55,6 +56,41 @@ fail:
   fclose(fp);
 
   return false;
+}
+
+bool fdx_create(struct fdx_entries * entries)
+{
+  assert(entries);
+
+  entries->numEntries = 0;
+  entries->entries = NULL;
+
+  return true;
+}
+
+bool fdx_add(struct fdx_entries * entries, const char * name, uint32_t dds_offset, uint32_t dds_size)
+{
+  assert(entries);
+
+  entries->entries = realloc(entries->entries, sizeof(struct fdx_entry *) * (entries->numEntries + 1));
+
+  if (!entries->entries)
+    return false;
+
+  struct fdx_entry * entry = calloc(1, sizeof(struct fdx_entry));
+
+  if (!entry)
+    return false;
+
+  entry->name = strdup(name);
+  entry->dds_offset = dds_offset;
+  entry->dds_size = dds_size;
+
+  entries->entries[entries->numEntries] = entry;
+
+  entries->numEntries += 1;
+
+  return true;
 }
 
 bool fdx_pack(const char * filename, struct fdx_entries * entries)
