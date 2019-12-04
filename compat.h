@@ -5,6 +5,11 @@
 #define PLATFORM_WINDOWS
 #elif defined(__linux__)
 #define PLATFORM_LINUX
+#define PLATFORM_UNIX
+#elif defined(__APPLE__)
+#include <TargetConditionals.h>
+#define PLATFORM_MACOS
+#define PLATFORM_UNIX
 #else
 #error "unsupported platform"
 #endif
@@ -14,7 +19,7 @@
 #elif defined(__i386__) || defined(_X86_)
 #define PLATFORM_BITS_32
 #else
-#error "unsupported bit width"
+#error "unsupported architecture bit width"
 #endif
 
 #endif

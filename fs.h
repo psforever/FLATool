@@ -8,7 +8,7 @@
 
 #ifdef PLATFORM_WINDOWS
 #  define PATH_SEP "\\"
-#elif defined(PLATFORM_LINUX)
+#else
 #  define PATH_SEP "/"
 #endif
 

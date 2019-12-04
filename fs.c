@@ -42,7 +42,7 @@ bool file_exists(const char * path)
   return true;
 }
 
-#elif defined(PLATFORM_LINUX)
+#elif defined(PLATFORM_UNIX)
 
 #include <sys/types.h>
 #include <sys/stat.h>

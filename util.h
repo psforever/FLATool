@@ -25,7 +25,7 @@ int planetside_strcmp(const char * l, const char * r);
 #define PRIxSZT "%x"
 #endif // PLATFORM_BITS_64
 
-#elif defined(PLATFORM_LINUX)
+#elif defined(PLATFORM_UNIX)
 
 #define PRIuSZT "%zu"
 #define PRIxSZT "%zx"

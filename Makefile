@@ -1,13 +1,21 @@
 CC=$(PREFIX)gcc
 STRIP=$(PREFIX)strip
 
+include Makefile.inc
+
 SRC=FLATool.c flat.c fdx.c varsz.c util.c fs.c
 OBJ=$(SRC:%.c=%.o)
 
-EXE=FLATool
+EXE=$(call exe-name,FLATool)
 
-CFLAGS=-Wall -O2
-LDFLAGS=-static
+CFLAGS +=-Wall -O2
+
+ifneq "$(OS)" "apple"
+  LDFLAGS +=-static
+  STRIP_FLAGS :=--strip-all
+else
+  STRIP_FLAGS :=
+endif
 
 all : $(EXE)
 
@@ -16,7 +24,7 @@ all : $(EXE)
 
 $(EXE) : $(OBJ)
 	$(CC) $(LDFLAGS) -o $@ $(OBJ)
-	$(STRIP) --strip-all $(EXE)
+	$(STRIP) $(STRIP_FLAGS) $(EXE)
 
 clean:
 	-rm -f $(OBJ) $(EXE)
